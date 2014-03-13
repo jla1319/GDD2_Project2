@@ -13,38 +13,31 @@
 		// Variables
 		private var box: Box;
 		private var platforms:Array;
+		private var levels:Array;
 		private var isRightPressed: Boolean = false;
 		private var isLeftPressed: Boolean = false;
 		private var isUpPressed: Boolean = false;
 		private var upKeyHeld: Boolean = false;
 		private var isDownPressed: Boolean = false;
 		private var ldr = new URLLoader();
+		private var level:Number;
+		private var currentLevel:Number = 0;
 		
 		public function Document() {
 			// constructor code
 			
 			platforms = new Array();
-			
-			//comment or delete once we get xml file
-			for(var i:uint = 0; i < 30; i++)
-			{
-				var platform:Platform = new Platform();
-				platform.x = Math.random() * stage.stageWidth;
-				platform.y = Math.random() * stage.stageHeight;
-				addChild(platform);
-				platforms.push(platform);
-			}
-			
+			//add levels here, they are in order of appearance
+			levels = ["xml/level00.xml","xml/level01.xml","xml/level02.xml", "xml/levelTest.xml", "xml/PressureLevel.xml", "xml/AbuseLevel.xml","xml/AnxietyLevel.xml","xml/DemonsLevel.xml"];
 			box = new Box(this);
-			addChild(box);
 			box.x = 250;
 			box.y = 100;
 			
 			//uncomment to set up loading xml file
 			
-			//var xmlPath = "xml/level.xml";
-			//var xmlReq = new URLRequest(xmlPath);
-			//ldr.addEventListener(Event.COMPLETE, xmlComplete);
+			var xmlPath = levels[currentLevel];
+			var xmlReq = new URLRequest(xmlPath);
+			ldr.addEventListener(Event.COMPLETE, xmlComplete);
 			
 			stage.addEventListener(Event.ENTER_FRAME, onFrame);
 			stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyPressed);
@@ -52,21 +45,70 @@
 			
 			//uncomment to load xml file
 			
-			//ldr.load(xmlReq);
+			ldr.load(xmlReq);
+		}
+		private function levelCompleted() {
+			//make next level
+			currentLevel++;
+			if(currentLevel >= levels.length){
+				currentLevel = 0;
+			}
+			//remove everything so we may draw the next level
+			for (var i:int = this.numChildren-1; i >= 0; i--) {
+				this.removeChildAt (i);
+			}
+			
+			//loader for next level
+			var xmlPath = levels[currentLevel];
+			var xmlReq = new URLRequest(xmlPath);
+			ldr.addEventListener(Event.COMPLETE, xmlComplete);
+			ldr.load(xmlReq);
 		}
 		//think this is all set for when we test an xml file
 		private function xmlComplete(e:Event):void {
+			//resets the array
+			platforms = new Array();
+			//remove so complete only goes once
 			ldr.removeEventListener(Event.COMPLETE, xmlComplete);
 			var myXML:XML = new XML( e.target.data );
 			// myXML is effectively references the <gallery> tag
-			for each (var platform:XML in myXML.platforms) 
+			for each (var platform:XML in myXML.platform) 
 			{
-				var _platform:Platform = new Platform;
+				//first determine the type of platform
+				var _platform:Platform;
+				if(platform.type == "glass")
+				{
+					_platform = new Glass;
+					_platform.platformType = "glass";
+				}
+				else if(platform.type == "goal")
+				{
+					_platform = new Goal;
+					_platform.platformType = "goal";
+				}
+				else
+				{
+					_platform = new Platform;
+					_platform.platformType = "platform";
+				}
+				
+				//next set it's location and sizes
 				_platform.x = platform.x;
 				_platform.y = platform.y;
 				_platform.height = platform.height;
 				_platform.width = platform.width;
+				
+				//add it to the platform array
 				platforms.push(_platform);
+			}
+			//add box because everything will be cleared aftera level is done
+			addChild(box);
+			box.x = myXML.startPosition.x;
+			box.y = myXML.startPosition.y;
+			//draw the platforms
+			for each (var p:Platform in platforms)
+			{
+				addChild(p);
 			}
 		}
 		
@@ -141,16 +183,18 @@
 				//are you close to one of the sides, or to the top or bottom? (p.height / p.width) is a ratio for platform size
 				//Horizontal
 				if (Math.abs(dx) * (platform.height / platform.width) > Math.abs(dy)) {
-					
-					//left side
-					if (dx < 0) {
-						box.x = platform.x - box.width - .5;
+					//this qualifier allows to run on top of platforms placed right next to each other
+					if(box.prevY >= (platform.y - box.height + 2)) {
+						//left side
+						if (dx < 0) {
+							box.x = platform.x - box.width - .5;
+						}
+						//right side
+						else {
+							box.x = platform.x + platform.width;
+						}
+						box.xAccel = 0;
 					}
-					//right side
-					else {
-						box.x = platform.x + platform.width;
-					}
-					box.xAccel = 0;
 				}
 				//Vertical
 				else {
@@ -162,9 +206,15 @@
 					}
 					//bottom
 					else {
-						box.y = platform.y + platform.height + .5;
+						box.y = platform.y + platform.height + 1;
 					}
 					box.yAccel = 0;
+				}
+				//if we have run into the goal platform, go to the next level
+				if(platform.platformType == "goal")
+				{
+					trace("level done.");
+					levelCompleted();
 				}
 			}
 		}

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UFT-8"?>
+<level>
+	<platform>
+		<x>0</x>
+		<y>0</y>
+		<width>15</width>
+		<height>443</height>
+		<type></type>
+	</platform>
+	<platform>
+		<x>0</x>
+		<y>443</y>
+		<width>1280</width>
+		<height>37</height>
+		<type>platform</type>
+	</platform>
+	<platform>
+		<x>627</x>
+		<y>0</y>
+		<width>13</width>
+		<height>378</height>
+		<type>platform</type>
+	</platform>
+	<platform>
+		<x>627</x>
+		<y>378</y>
+		<width>13</width>
+		<height>66</height>
+		<type>goal</type>
+	</platform>
+	<startPosition>
+		<x>19</x>
+		<y>410</y>
+	</startPosition>	
+</level>

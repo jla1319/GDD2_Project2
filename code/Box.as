@@ -21,29 +21,37 @@
 		
 			public function moveRight(): void {
 				xAccel += .5;
+				if(xAccel < 0){
+					xAccel += .25;
+				}
 			}
 			public function moveLeft(): void {
 				xAccel -= .5;
+				if(xAccel > 0){
+					xAccel -= .25;
+				}
 			}
 		
 			public function moveUp(): void {
 				//Second jump coded first so it won't activate first time around
 				if(inAir && !doubleJump)
 				{
-					yAccel = -6;
+					yAccel = -5;
 					doubleJump = true;
 				}
 				//Primary jump
 				if(!inAir)
 				{
-					yAccel = -6;
+					yAccel = -5;
 				}
+				//yAccel = -4;
 			}
 			
 			public function moveDown(): void {
 				
 			}
 			public function movement(): void {
+				//trace(x, y);
 				var xMove:Number = xAccel * (60/main.stage.frameRate);
 				var yMove:Number = yAccel * (60/main.stage.frameRate);
 				//absolute max movement x
@@ -110,20 +118,16 @@
 				{
 					yAccel = 14;
 				}
-				//bottom of platform
-				if(this.y > 400 - this.height)
-				{
-					this.y = 400 - this.height;
-					yAccel = 0;
-					inAir = false;
-					doubleJump = false;
-					
-				}
 				//top of screen
 				if(this.y < 0)
 				{
 					this.y = 0;
 					yAccel = 0;
+				}
+				if(this.x < 0)
+				{
+					this.x = 0;
+					xAccel = 0;
 				}
 			}
 	}
