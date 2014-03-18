@@ -205,16 +205,18 @@
 	</platform>
 	<platform>
 		<x>395</x>
-		<y>0</y>
+		<y>20</y>
 		<width>20</width>
 		<height>80</height>
+		<direction>up</direction>
 		<type>pressurePlatform</type>
 	</platform>
 	<platform>
 		<x>395</x>
-		<y>472.5</y>
+		<y>450</y>
 		<width>20</width>
 		<height>80</height>
+		<direction>down</direction>
 		<type>pressurePlatform</type>
 	</platform>
 	<platform>

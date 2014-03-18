@@ -44,7 +44,7 @@
 				{
 					yAccel = -5;
 				}
-				//yAccel = -4;
+				yAccel = -4;
 			}
 			
 			public function moveDown(): void {
@@ -127,6 +127,11 @@
 				if(this.x < 0)
 				{
 					this.x = 0;
+					xAccel = 0;
+				}
+				if(this.x > 626)
+				{
+					this.x = 626;
 					xAccel = 0;
 				}
 			}

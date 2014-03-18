@@ -28,7 +28,10 @@
 			
 			platforms = new Array();
 			//add levels here, they are in order of appearance
-			levels = ["xml/level00.xml","xml/level01.xml","xml/level02.xml", "xml/levelTest.xml", "xml/PressureLevel.xml", "xml/AbuseLevel.xml","xml/AnxietyLevel.xml","xml/DemonsLevel.xml"];
+			levels = ["xml/level00.xml","xml/level01.xml","xml/level02.xml", "xml/levelTest.xml", "xml/DepressionLevel.xml", 
+				"xml/PressureLevel.xml", "xml/AbuseLevel.xml","xml/AnxietyLevel.xml","xml/ViolenceLevel1.xml","xml/DemonsLevel.xml"];
+			//debug purpose: test one level.
+			//levels = ["xml/DepressionLevel.xml"];
 			box = new Box(this);
 			box.x = 250;
 			box.y = 100;
@@ -64,6 +67,16 @@
 			ldr.addEventListener(Event.COMPLETE, xmlComplete);
 			ldr.load(xmlReq);
 		}
+		private function levelReset() {
+			for (var i:int = this.numChildren-1; i >= 0; i--) {
+				this.removeChildAt (i);
+			}
+			//reload the level
+			var xmlPath = levels[currentLevel];
+			var xmlReq = new URLRequest(xmlPath);
+			ldr.addEventListener(Event.COMPLETE, xmlComplete);
+			ldr.load(xmlReq);
+		}
 		//think this is all set for when we test an xml file
 		private function xmlComplete(e:Event):void {
 			//resets the array
@@ -71,6 +84,8 @@
 			//remove so complete only goes once
 			ldr.removeEventListener(Event.COMPLETE, xmlComplete);
 			var myXML:XML = new XML( e.target.data );
+			Depressed.RaiseHeight = 0;
+			Raiser.resetClicks();
 			// myXML is effectively references the <gallery> tag
 			for each (var platform:XML in myXML.platform) 
 			{
@@ -85,6 +100,38 @@
 				{
 					_platform = new Goal;
 					_platform.platformType = "goal";
+				}
+				else if(platform.type == "raiser")
+				{
+					_platform = new Raiser;
+					_platform.platformType = "raiser";
+				}
+				else if(platform.type == "depressed")
+				{
+					_platform = new Depressed;
+					_platform.platformType = "depressed";
+				}
+				else if(platform.type == "resetDepressed")
+				{
+					_platform = new Platform;
+					_platform.platformType = "resetDepressed";
+				}
+				else if(platform.type == "spikes")
+				{
+					_platform = new Spikes;
+					_platform.platformType = "spikes";
+				}
+				else if(platform.type == "fakeGoal")
+				{
+					_platform = new FakeGoal;
+					_platform.platformType = "fakeGoal";
+					_platform.LiftGate();
+				}
+				else if(platform.type == "pressurePlatform")
+				{
+					_platform = new PressurePlatform(platform.direction);
+					_platform.platformType = "pressurePlatform";
+					trace("some pressure platforms");
 				}
 				else
 				{
@@ -101,7 +148,7 @@
 				//add it to the platform array
 				platforms.push(_platform);
 			}
-			//add box because everything will be cleared aftera level is done
+			//add box because everything will be cleared after a level is done
 			addChild(box);
 			box.x = myXML.startPosition.x;
 			box.y = myXML.startPosition.y;
@@ -114,13 +161,13 @@
 		
 					//determines what keys are pressed
 		public function onKeyPressed(ke: KeyboardEvent) {
-			if(ke.keyCode == Keyboard.RIGHT){
+			if(ke.keyCode == Keyboard.RIGHT || ke.keyCode == Keyboard.D){
 				isRightPressed = true;
 			}
-			if(ke.keyCode == Keyboard.LEFT){
+			if(ke.keyCode == Keyboard.LEFT || ke.keyCode == Keyboard.A){
 				isLeftPressed = true;
 			}
-			if(ke.keyCode == Keyboard.UP){
+			if(ke.keyCode == Keyboard.UP || ke.keyCode == Keyboard.W){
 				isUpPressed = true;
 			}
 			if(ke.keyCode == Keyboard.DOWN){
@@ -130,22 +177,26 @@
 			
 		public function onKeyRelease(ke: KeyboardEvent){
 			//determines if keys are not pressed or stopped being pressed
-			if(ke.keyCode == Keyboard.RIGHT){
+			if(ke.keyCode == Keyboard.RIGHT || ke.keyCode == Keyboard.D){
 				isRightPressed = false;
 			}
-			if(ke.keyCode == Keyboard.LEFT){
+			if(ke.keyCode == Keyboard.LEFT || ke.keyCode == Keyboard.A){
 				isLeftPressed = false;
 			}
-			if(ke.keyCode == Keyboard.UP){
+			if(ke.keyCode == Keyboard.UP|| ke.keyCode == Keyboard.W){
 				isUpPressed = false;
 				upKeyHeld = false;
 			}
 			if(ke.keyCode == Keyboard.DOWN){
 				isDownPressed = false;
 			}
+			if(ke.keyCode == Keyboard.R){
+				levelReset();
+			}
 		}
 			
 		public function onFrame(e: Event){
+			//trace (Depressed.RaiseHeight);
 			//if the key is pressed, move object
 			if(isRightPressed) {
 				box.moveRight();
@@ -163,9 +214,30 @@
 			if(isDownPressed){
 				box.moveDown();
 			}
-			box.movement();	
+			box.movement();
+			
+			//move depressed blocks down if they aren't on the ground
+			if (Depressed.RaiseHeight >= .25)
+			{
+				Depressed.RaiseHeight -= .25;
+			}
+			else if (Depressed.RaiseHeight < .25)
+			{
+				Depressed.RaiseHeight = 0;
+				Raiser.resetClicks();
+			}
+			
+			//if the prize is obtained, gate platforms begin to move down
+			//if(prizeGotten){
+				//PressurePlatform.SetHeight -= .25;
+			//}
 			for(var i:uint = 0; i < platforms.length; i++)
 			{
+				if(platforms[i].platformType == "pressurePlatform"){
+					platforms[i].MoveDown();
+					//trace("there are some pressure platforms!");
+				}
+				
 				checkCollision(platforms[i]);
 			}
 		}
@@ -216,6 +288,29 @@
 					trace("level done.");
 					levelCompleted();
 				}
+				//lets the game detect if a raiser button has been hit
+				else if(platform.platformType == "raiser")
+				{
+					//prevents repeating clicks
+					if (!Raiser(platform).Clicked)
+					{
+						Raiser(platform).raisePlatforms();
+					}
+				}
+				else if(platform.platformType == "spikes" || platform.platformType == "fakeGoal")
+				{
+					trace("dead");
+					levelReset();
+				}
+				else if(platform.platformType == "resetDepressed")
+				{
+					Depressed.RaiseHeight = 0;
+					Raiser.resetClicks();
+				}
+				/*else if (platform.platformType == "pressurePlatformPrize")
+				{
+					
+				}*/
 			}
 		}
 	}	
